@@ -32,7 +32,7 @@ jobs:
       LIVE_STIRLING_URL: http://localhost:8080
       LIVE_STIRLING_API_KEY: ci_live_engine_key_0123456789
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

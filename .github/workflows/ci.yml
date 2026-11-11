@@ -112,7 +112,7 @@ jobs:
       - name: Smoke-test image (migrations shipped, both entrypoints present)
         run: docker run --rm --entrypoint sh eyeshots/gateway:${{ github.sha }} -c 'test -f migrations/001_accounts_billing.sql && test -f dist/index.js && test -f dist/worker.js && [ "$(whoami)" = node ]'
       - name: Scan for critical vulnerabilities
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: eyeshots/gateway:${{ github.sha }}
           severity: CRITICAL

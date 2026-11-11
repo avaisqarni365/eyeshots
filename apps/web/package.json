@@ -10,7 +10,7 @@
     "lint": "eslint . --max-warnings 294"
   },
   "dependencies": {
-    "@types/jszip": "^3.4.0",
+    "@types/jszip": "^3.4.1",
     "@types/marked": "^5.0.2",
     "fabric": "^5.3.0",
     "jszip": "^3.10.2",

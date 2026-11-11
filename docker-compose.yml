@@ -1,0 +1,127 @@
+services:
+  # 1. Stirling-PDF headless processing core (internal only — never exposed publicly)
+  stirling-pdf-core:
+    # Pin a tested version in production instead of :latest.
+    image: frooodle/s-pdf:latest
+    container_name: eyeshots-stirling-engine
+    restart: unless-stopped
+    # Bound to localhost for local debugging (Swagger UI). Remove in production.
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      - DOCKER_ENABLE_SECURITY=true
+      - SECURITY_ENABLELOGIN=false
+      - SYSTEM_DEFAULTLOCALE=en_GB
+      - UI_APPNAME=EyeShots Engine
+      - API_KEY=${INTERNAL_STIRLING_API_KEY:-eyeshots_internal_dev_secret_key}
+    volumes:
+      - stirling_logs:/logs
+    # Engine scratch space lives in RAM so nothing persists across restarts (zero retention).
+    tmpfs:
+      - /tmp:size=2g
+
+  # 2. Redis — BullMQ job queue (job metadata only; no persistence, documents never stored here)
+  redis:
+    image: redis:7-alpine
+    container_name: eyeshots-redis
+    restart: unless-stopped
+    # noeviction is required by BullMQ: evicted keys would silently lose jobs.
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  # 2b. Postgres — accounts, sessions, subscriptions, usage counters. NEVER documents.
+  postgres:
+    image: postgres:16-alpine
+    container_name: eyeshots-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=eyeshots
+      - POSTGRES_USER=eyeshots
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-eyeshots_dev_password}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eyeshots -d eyeshots"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # 3. EyeShots API gateway (the only public backend entry point)
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: eyeshots-api-gateway
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - NODE_ENV=${NODE_ENV:-development}
+      - STIRLING_ENGINE_URL=http://stirling-pdf-core:8080
+      - INTERNAL_STIRLING_API_KEY=${INTERNAL_STIRLING_API_KEY:-eyeshots_internal_dev_secret_key}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+      - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-100}
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-30}
+      - ADMIN_API_TOKEN=${ADMIN_API_TOKEN:-}
+      - REDIS_URL=redis://redis:6379
+      - JOB_STORE=fs
+      - JOB_STORE_DIR=/jobs
+      - DATABASE_URL=postgres://eyeshots:${POSTGRES_PASSWORD:-eyeshots_dev_password}@postgres:5432/eyeshots
+      - AUTH_SECRET=${AUTH_SECRET:-dev_only_auth_secret_change_me_0123456789abcdef}
+      - APP_URL=${APP_URL:-http://localhost:3000}
+      - SMTP_URL=${SMTP_URL:-}
+      - EMAIL_FROM=${EMAIL_FROM:-EyeShots <no-reply@localhost>}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - STRIPE_PRICE_PRO_MONTHLY=${STRIPE_PRICE_PRO_MONTHLY:-}
+      - STRIPE_PRICE_PRO_YEARLY=${STRIPE_PRICE_PRO_YEARLY:-}
+      - STRIPE_PRICE_TEAM_MONTHLY=${STRIPE_PRICE_TEAM_MONTHLY:-}
+      - STRIPE_PRICE_TEAM_YEARLY=${STRIPE_PRICE_TEAM_YEARLY:-}
+    volumes:
+      - job_blobs:/jobs
+    depends_on:
+      stirling-pdf-core:
+        condition: service_started
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+  # 4. Queue worker — runs queued jobs (OCR, Office conversion, compression…) on Stirling.
+  #    Scale with: docker compose up -d --scale worker=3
+  worker:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    command: ["node", "dist/worker.js"]
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - STIRLING_ENGINE_URL=http://stirling-pdf-core:8080
+      - INTERNAL_STIRLING_API_KEY=${INTERNAL_STIRLING_API_KEY:-eyeshots_internal_dev_secret_key}
+      - REDIS_URL=redis://redis:6379
+      - JOB_STORE=fs
+      - JOB_STORE_DIR=/jobs
+      - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-2}
+    volumes:
+      - job_blobs:/jobs
+    healthcheck:
+      disable: true
+    depends_on:
+      - stirling-pdf-core
+      - redis
+
+volumes:
+  stirling_logs:
+  postgres_data:
+  # Shared, RAM-backed (tmpfs) store for queued job files: nothing survives a restart.
+  job_blobs:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "size=4g,uid=1000,gid=1000,mode=0700"

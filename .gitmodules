@@ -1,0 +1,3 @@
+[submodule "core/stirling-pdf"]
+	path = core/stirling-pdf
+	url = https://github.com/Stirling-Tools/Stirling-PDF.git

@@ -1,0 +1,48 @@
+name: Live engine smoke test
+
+# Runs the gateway against a real Stirling-PDF container to catch engine API
+# drift (renamed endpoints or parameters) that the CI mock cannot detect.
+on:
+  schedule:
+    - cron: '17 3 * * *' # nightly
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'services/api-gateway/src/tools.ts'
+      - 'services/api-gateway/src/stirling.ts'
+      - 'docker-compose.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      stirling:
+        # Keep in sync with docker-compose.yml (pin a tested version for production).
+        image: frooodle/s-pdf:latest
+        env:
+          DOCKER_ENABLE_SECURITY: 'true'
+          SECURITY_ENABLELOGIN: 'false'
+          API_KEY: ci_live_engine_key_0123456789
+        ports: ['8080:8080']
+    env:
+      LIVE_STIRLING_URL: http://localhost:8080
+      LIVE_STIRLING_API_KEY: ci_live_engine_key_0123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Wait for Stirling-PDF
+        run: |
+          for i in $(seq 1 90); do
+            curl -sf http://localhost:8080/api/v1/info/status > /dev/null && exit 0
+            sleep 2
+          done
+          echo "Stirling-PDF did not become ready" && exit 1
+      - run: npm run test:live

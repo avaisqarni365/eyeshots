@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+apps/web/out/
+services/api-gateway/dist/
+*.tsbuildinfo
+
+# Tauri / Rust build output (see also apps/desktop/src-tauri/.gitignore)
+apps/desktop/src-tauri/target/
+
+# Test output
+coverage/
+test-results/
+playwright-report/
+blob-report/
+
+# Environment & secrets — only .env.example is committed
+.env
+.env.*
+!.env.example
+
+# Local tooling
+.claude/
+.vscode/
+.idea/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db

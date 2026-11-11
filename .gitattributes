@@ -1,0 +1,12 @@
+# Normalise line endings in the repo (CI runs on Linux; scripts must stay LF).
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.ico binary
+*.icns binary
+*.bcmap binary
+*.pfb binary
+*.ttf binary
+*.woff2 binary
+*.pdf binary

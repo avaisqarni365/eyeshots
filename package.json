@@ -1,0 +1,47 @@
+{
+  "name": "eyeshots-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Next-Generation Privacy-First PDF SaaS Platform",
+  "workspaces": [
+    "apps/*",
+    "services/*"
+  ],
+  "scripts": {
+    "engine:start": "docker compose up -d stirling-pdf-core redis",
+    "engine:stop": "docker compose down",
+    "dev:gateway": "npm --prefix services/api-gateway run dev",
+    "dev:worker": "npm --prefix services/api-gateway run dev:worker",
+    "dev:web": "npm --prefix apps/web run dev",
+    "dev:desktop": "npm --prefix apps/desktop run dev",
+    "build:desktop": "npm --prefix apps/desktop run build",
+    "build": "npm --prefix services/api-gateway run build && npm --prefix apps/web run build",
+    "build:web": "npm --prefix apps/web run build",
+    "build:gateway": "npm --prefix services/api-gateway run build",
+    "typecheck": "tsc -p apps/web --noEmit && tsc -p services/api-gateway --noEmit && tsc -p services/api-gateway/tsconfig.test.json",
+    "lint": "npm --prefix apps/web run lint",
+    "test": "vitest run --project web --project gateway",
+    "test:watch": "vitest --project web --project gateway",
+    "test:integration": "vitest run --project gateway-integration",
+    "test:coverage": "vitest run --project web --project gateway --project gateway-integration --coverage",
+    "test:e2e": "playwright test",
+    "ci": "npm run typecheck && npm run lint && npm test && npm run test:integration",
+    "test:live": "vitest run --project gateway-live"
+  },
+  "keywords": [
+    "pdf",
+    "sejda-alternative",
+    "pdf-editor",
+    "stirling-pdf",
+    "wasm",
+    "pdf-tools"
+  ],
+  "author": "EyeShots Engineering Team",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "@types/fabric": "^5.3.11",
+    "@vitest/coverage-v8": "^3.2.7",
+    "vitest": "^3.2.7"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "eyeshots-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "User-Facing Next.js 15 Web Application for EyeShots",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "eslint . --max-warnings 294"
+  },
+  "dependencies": {
+    "@types/jszip": "^3.4.0",
+    "@types/marked": "^5.0.2",
+    "fabric": "^5.3.0",
+    "jszip": "^3.10.2",
+    "lucide-react": "^0.475.0",
+    "marked": "^18.1.3",
+    "next": "^15.5.29",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.29",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3"
+  }
+}

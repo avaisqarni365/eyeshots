@@ -1,0 +1,13 @@
+{
+  "name": "eyeshots-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cross-Platform Tauri 2.0 Desktop Application for EyeShots",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4"
+  }
+}

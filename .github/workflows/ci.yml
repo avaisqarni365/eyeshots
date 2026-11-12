@@ -112,7 +112,8 @@ jobs:
       - name: Smoke-test image (migrations shipped, both entrypoints present)
         run: docker run --rm --entrypoint sh eyeshots/gateway:${{ github.sha }} -c 'test -f migrations/001_accounts_billing.sql && test -f dist/index.js && test -f dist/worker.js && [ "$(whoami)" = node ]'
       - name: Scan for critical vulnerabilities
-        uses: aquasecurity/trivy-action@0.28.0
+        # Pinned to a commit: trivy-action's tags were rewritten after a March 2026 compromise.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: eyeshots/gateway:${{ github.sha }}
           severity: CRITICAL
